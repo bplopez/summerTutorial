@@ -1,20 +1,17 @@
-%% L1solve
-%{
-Solve Ax = b
-Inputs:
-	b = measured image [ M x N ]
-	xin = initial guess [ M x N ]
-	mu = quadratic penalty
-	tau = L1 weight
-	max_iter = maximum number of iterations
-Outputs:
-	x_out = image iterations [ M x N x iter ]
-	w_out = w iterations [ 2M x N x iter ]
-	l_out = Lagrange multiplier iterations [ 2M x N x iter] 
-	px_out = phi*x iterations [ 2M x N x iter] 
-	n1 = ||phi*x - w|| iterations [ iter x 1 ]
-	n2 = ||A*x - b|| / ||b|| iterations [ iter x 1 ]
-%}
+% L1solve: applies TV denoising to solve Ax = b
+% Inputs:
+%	b = measured image [ M x N ]
+%	xin = initial guess [ M x N ]
+%	mu = quadratic penalty
+%	tau = L1 weight
+%	max_iter = maximum number of iterations
+% Outputs:
+%	x_out = image iterations [ M x N x iter ]
+%	w_out = w iterations [ 2M x N x iter ]
+%	l_out = Lagrange multiplier iterations [ 2M x N x iter] 
+%	px_out = phi*x iterations [ 2M x N x iter] 
+%	n1 = ||phi*x - w|| iterations [ iter x 1 ]
+%	n2 = ||A*x - b|| / ||b|| iterations [ iter x 1 ]
 
 function [x_out,w_out,l_out,px_out,n1,n2] = L1solve(b,xin,mu,tau,max_iter)
 
