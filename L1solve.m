@@ -1,30 +1,24 @@
 %% L1solve
 %{
 Solve Ax = b
-b = measured image;
-xin = initial guess;
-mu = quadratic penalty
-tau = L1 weight
-max_iter = maximum number of iterations
+Inputs:
+	b = measured image [ M x N ]
+	xin = initial guess [ M x N ]
+	mu = quadratic penalty
+	tau = L1 weight
+	max_iter = maximum number of iterations
+Outputs:
+	x_out = image iterations [ M x N x iter ]
+	w_out = w iterations [ 2M x N x iter ]
+	l_out = Lagrange multiplier iterations [ 2M x N x iter] 
+	px_out = phi*x iterations [ 2M x N x iter] 
+	n1 = ||phi*x - w|| iterations [ iter x 1 ]
+	n2 = ||A*x - b|| / ||b|| iterations [ iter x 1 ]
 %}
 
 function [x_out,w_out,l_out,px_out,n1,n2] = L1solve(b,xin,mu,tau,max_iter)
 
 %% Set up variables
-
-% Phantom Image
-%{
-im = phantom(64);
-b = imnoise(im,'poisson');
-%b = b(5:60,:);
-b = b(:,5:60);
-%}
-
-% Load image
-%{
-im = load('p0105a_TT_1-300000_LL_all_EE_126.45-154.55.mat');
-b = im.imageDet1;
-%}
 
 % Image size
 [M,N] = size(b);
@@ -32,7 +26,7 @@ MN = M*N;
 
 % Image space
 b = b(:);
-x = xin;
+x = xin(:);
 
 % Gradient space
 w = zeros(2*MN,1);
@@ -45,7 +39,7 @@ l = zeros(2*MN,1);
 A = eye(MN,MN);
 AA = A;
 
-%% Create gradient
+%% Create gradient operator
 phix = zeros(MN,MN);
 phiy = zeros(MN,MN);
 for ii = 1:MN-M
@@ -67,7 +61,7 @@ phi = [phix;phiy];
 % Loop variables
 iter = 1;
 e = 10^-4;          % error tolerance
-L2A = AA + (phixx + phiyy)/mu;
+L2A = AA + (phixx + phiyy)/mu;	% constant matrix in L2 subproblem calculation
 
 % Variables for iterations
 x_mat = zeros(MN,max_iter+1);
@@ -107,7 +101,7 @@ while( ( n2(iter) > e ) && ( iter <= max_iter ) )
     % Update Lagrange multiplier
     l_mat(:,iter+1) = l_mat(:,iter) - (phi*x_mat(:,iter+1) - w_mat(:,iter+1))/mu;
     
-    % Update iterations
+    % Update norms and iterations
     iter = iter+1;
     n1(iter) = norm(phi*x_mat(:,iter) - w_mat(:,iter));
     n2(iter) = norm(A*x_mat(:,iter) - b)/norm(b);
@@ -115,8 +109,10 @@ while( ( n2(iter) > e ) && ( iter <= max_iter ) )
  
 end
 
-% Clear variables
+% Clear variables and prepare outputs
+
 clear x w l x_temp w_temp w_i w_0 w_soft ii phix phiy;
+
 x_mat = x_mat(:,1:iter);
 w_mat = w_mat(:,1:iter);
 l_mat = l_mat(:,1:iter);

@@ -15,7 +15,7 @@ im = phantom(64);
 b = imnoise(im,'gaussian');
 [M,N] = size(b);
 MN = M*N;
-xin = rand(MN,1);
+xin = rand(M,N);
 
 xout = zeros(Nmu,Ntau,M,N,max_iter+1);
 wout = zeros(Nmu,Ntau,2*M,N,max_iter+1);

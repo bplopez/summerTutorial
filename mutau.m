@@ -9,7 +9,7 @@ im = load('p0105a_TT_1-300000_LL_all_EE_126.45-154.55.mat');
 b = im.imageDet1;
 [M,N] = size(b);
 MN = M*N;
-xin = rand(MN,1);
+xin = rand(M,N);
 
 %{
 for ii = 1:length(tau)
@@ -17,7 +17,7 @@ for ii = 1:length(tau)
 end
 %}
 
-[xout,wout,lout,n1,n2] = L1solve(b,xin,mu,tau,max_iter);
+[xout,wout,lout,pxout,n1,n2] = L1solve(b,xin,mu,tau,max_iter);
 
 %{
 xout = zeros(length(mu),length(tau),MN);
