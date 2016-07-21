@@ -80,14 +80,15 @@ while( ( n2(iter) > e ) && ( iter <= max_iter ) )
     
     % Solve L2 subproblem analytically
     d = w_mat(:,iter) + mu*l_mat(:,iter);
-    x_mat(:,iter+1) = L2A \ ( (b'*A) + ((d(1:MN)'*phix) + (d(MN+1:2*MN)'*phiy))/mu )';
- 
+    %x_mat(:,iter+1) = L2A \ ( (b'*A) + ((d(1:MN)'*phix) + (d(MN+1:2*MN)'*phiy))/mu )';
+    x_mat(:,iter+1) = L2A \ ( (A'*b) + (phix'*d(1:MN) + phiy'*d(MN+1:2*MN))/mu );
+    
     % Solve L1 subproblem with soft thresholding operator
     for ii = 1:2
         
         w_soft = phi((M*N*(ii-1)+1):(M*N*ii),:)*x_mat(:,iter) - mu*l_mat((M*N*(ii-1)+1):(M*N*ii),iter);
         %w_i(:,ii) = wthresh(w_soft,'s',tau*mu);
-	w_i(:,ii) = sign(w_soft).*max(w_0,abs(w_soft) - tau*mu);
+        w_i(:,ii) = sign(w_soft).*max(w_0,abs(w_soft) - tau*mu);
         %w_i(:,ii) = w_soft./abs(w_soft).*max(w_0,abs(w_soft) - tau*mu);
         %w_i(:,ii) = wthresh(w_soft,'s',tau*mu);
         
@@ -103,19 +104,21 @@ while( ( n2(iter) > e ) && ( iter <= max_iter ) )
     n1(iter) = norm(phi*x_mat(:,iter) - w_mat(:,iter));
     n2(iter) = norm(A*x_mat(:,iter) - b)/norm(b);
     px_mat(:,iter) = phi*x_mat(:,iter);
- 
+    
 end
 
 % Clear variables and prepare outputs
 
 clear x w l x_temp w_temp w_i w_0 w_soft ii phix phiy;
 
+%{
 x_mat = x_mat(:,1:iter);
 w_mat = w_mat(:,1:iter);
 l_mat = l_mat(:,1:iter);
 n1 = n1(1:iter);
 n2 = n2(1:iter);
 px_mat = px_mat(:,1:iter);
+%}
 
 x_out = reshape(x_mat,M,N,iter);
 w_out = [reshape(w_mat(1:MN,:),M,N,iter);reshape(w_mat(MN+1:2*MN,:),M,N,iter)];

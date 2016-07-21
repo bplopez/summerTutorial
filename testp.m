@@ -1,6 +1,8 @@
 % Plot resulting final images
 
 iter = max_iter+1;
+mu = Nmu;
+tau = Ntau; 
 
 %% Make movies
 movX(iter) = struct('cdata',[],'colormap',[]);
@@ -9,19 +11,19 @@ movPX = movX;
 movN1 = movX;
 movN2 = movX;
 
-for kk = 1:iter
-    for ii = 1:5
-        for jj = 1:5
+for kk = 1:2:iter
+    for ii = 1:mu
+        for jj = 1:tau
             figure(1)
-            subplot(5,5,5*(ii-1)+jj,'replace');
+            subplot(mu,tau,tau*(ii-1)+jj,'replace');
             imagesc(squeeze(xout(ii,jj,:,:,kk)));
             axis equal; axis off;
             figure(2)
-            subplot(5,5,5*(ii-1)+jj,'replace');
+            subplot(mu,tau,tau*(ii-1)+jj,'replace');
             imagesc(squeeze(pxout(ii,jj,:,:,kk)));
             axis off;
             figure(3)
-            subplot(5,5,5*(ii-1)+jj,'replace');
+            subplot(mu,tau,tau*(ii-1)+jj,'replace');
             imagesc(squeeze(wout(ii,jj,:,:,kk)));
             axis off
         end
@@ -34,7 +36,7 @@ for kk = 1:iter
     movN1(kk) = getframe(4);
     movN2(kk) = getframe(5);
 end
-
+clear ii jj kk mu tau
 %% Display movies
 %{
 figure; axes('pos',[0 0 1 1],'visible','off'); movie(movX,1,1)
