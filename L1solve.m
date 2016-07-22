@@ -89,8 +89,6 @@ while( ( n2(iter) > e ) && ( iter <= max_iter ) )
         w_soft = phi((M*N*(ii-1)+1):(M*N*ii),:)*x_mat(:,iter) - mu*l_mat((M*N*(ii-1)+1):(M*N*ii),iter);
         %w_i(:,ii) = wthresh(w_soft,'s',tau*mu);
         w_i(:,ii) = sign(w_soft).*max(w_0,abs(w_soft) - tau*mu);
-        %w_i(:,ii) = w_soft./abs(w_soft).*max(w_0,abs(w_soft) - tau*mu);
-        %w_i(:,ii) = wthresh(w_soft,'s',tau*mu);
         
     end
     w_mat(:,iter+1) = [w_i(:,1); w_i(:,2)];

@@ -43,6 +43,7 @@ for ii = 1:MN-M
     phix(ii,ii) = -1;
     phix(ii,ii+M) = 1;
 end
+phix(ii+1:end,:) = phix(ii-M+1:ii,:);
 for ii = 1:MN
     if rem(ii,M) ~= 0
         phiy(ii,ii) = -1;
@@ -52,11 +53,15 @@ for ii = 1:MN
         phiy(ii,ii) = 1;
     end
 end
-phi = [phix;phiy];
-clear M N MN;
+phi = phix+phiy;
+%phi = [phix;phiy];
+clear M N MN phix phiy;
 
 mu = 0.1;
-tau = 0.01;
+% tau = 0.01;	% AMA
+tau = 0.15;
+%tau = (mu/20)^(1/3);	% ADMM
 iter = 25;
 
-[x, px, l, lh, w, a, n, r] = AMAsolve(b,mu,tau,phi,iter);
+%[x, px, l, lh, w, a, n, r] = AMAsolve(b,mu,tau,phi,iter);
+[x, px, l, lh, w, wh, a, c, n, r] = ADMMsolve(b,mu,tau,phi,iter);
