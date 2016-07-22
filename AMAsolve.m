@@ -18,23 +18,7 @@ function  [x,px,l, lh, w, a, n, r] = AMAsolve(b,mu,tau,phi,max_iter)
 MN = M*N;
 b = b(:);
 
-% Gradient operator
-%{
-phix = zeros(MN,MN);
-phiy = zeros(MN,MN);
-for ii = 1:MN-M
-    phix(ii,ii) = -1;
-    phix(ii,ii+M) = 1;
-end
-for ii = 1:MN
-    if rem(ii,M) ~= 0
-        phiy(ii,ii) = -1;
-        phiy(ii,ii+1) = 1;
-    end
-end
-phi = [phix;phiy];
-%}
-phix = phi(1:MN,:); phiy = phi(MN+1:2*MN,:);
+% phix = phi(1:MN,:); phiy = phi(MN+1:2*MN,:);
 
 % Physics model
 %A = eye(MN,MN);

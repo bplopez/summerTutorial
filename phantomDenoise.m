@@ -31,9 +31,13 @@ end
 
 %[xout,wout,lout,n1,n2] = L1solve(b,xin,mu,tau,max_iter);
 %}
-
 im = phantom(64);
-b = imnoise(im,'gaussian');
+gsl = 256;
+m = 0;
+v = 0.01;
+b = imnoise(im,'gaussian',m,v/gsl);
+b = round(b*256);
+%b = round(im*256);
 
 [M,N] = size(b);
 MN = M*N;
@@ -53,15 +57,29 @@ for ii = 1:MN
         phiy(ii,ii) = 1;
     end
 end
-phi = phix+phiy;
-%phi = [phix;phiy];
-clear M N MN phix phiy;
+%phi = phix+phiy;
+phi = [phix;phiy];
+%phi = phix;
+clear M N MN phix phiy ii;
 
-mu = 0.1;
-% tau = 0.01;	% AMA
-tau = 0.15;
-%tau = (mu/20)^(1/3);	% ADMM
-iter = 25;
+mu = 0.05;
+% tau = mu/10;	% AMA
+tau = mu*2;     % ADMM
+iter = 50;
 
 %[x, px, l, lh, w, a, n, r] = AMAsolve(b,mu,tau,phi,iter);
 [x, px, l, lh, w, wh, a, c, n, r] = ADMMsolve(b,mu,tau,phi,iter);
+
+ii = length(r);
+figure(1); 
+subplot(2,3,1); imagesc(round(x(:,:,ii))); colorbar
+subplot(2,3,4); imagesc(px(:,:,ii)); colorbar
+subplot(2,3,2); imagesc(w(:,:,ii+1)); colorbar
+subplot(2,3,5); imagesc(wh(:,:,ii+1)); colorbar
+subplot(2,3,3); imagesc(l(:,:,ii+1)); colorbar
+subplot(2,3,6); imagesc(lh(:,:,ii+1)); colorbar
+
+jj = 32;
+figure(2); plot(b(:,jj)); hold on; plot(x(:,jj,end)); hold off; legend('Input','Output');
+
+figure(3); imagesc(b); colorbar
