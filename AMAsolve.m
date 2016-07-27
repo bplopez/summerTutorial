@@ -3,13 +3,19 @@
 % Inputs:     b = measured image [ M x N ]
 %             mu = strongly complex constant
 %             tau = step size (< mu/8)
+%             phi = forward finite difference (2D directions) [ 2MN x MN ]
 %             max_iter = maximum number of iterations
 %         
-% Outputs:    x_out = image iterations [ M x N x iter ]
-%             n = norm of image iteration differences
-            
+% Outputs:    x = image iterations [ M x N x iter ]
+%             px = phi*(image iterations) [ 2M x N x iter]
+%             l = Lagrange multiplier [ 2M x N x (iter+1) ]
+%             lh = Lagrange multiplier [ 2M x N x (iter+1) ]
+%             w = gradient image iterations [ 2M x N x iter ]
+%             a = acceleration factor [ (iter+1) x 1]
+%             n = norm of image iteration differences [ iter x 1 ]
+%             r = norm of residual with input image [ iter x 1 ]
 
-function  [x,px,l, lh, w, a, n, r] = AMAsolve(b,mu,tau,phi,max_iter)
+function  [x,px,l,lh,w,a,n,r] = AMAsolve(b,mu,tau,phi,max_iter)
 
 %% Set up variables
 
@@ -17,8 +23,6 @@ function  [x,px,l, lh, w, a, n, r] = AMAsolve(b,mu,tau,phi,max_iter)
 [M,N] = size(b);
 MN = M*N;
 b = b(:);
-
-% phix = phi(1:MN,:); phiy = phi(MN+1:2*MN,:);
 
 % Physics model
 %A = eye(MN,MN);
@@ -46,19 +50,19 @@ r = zeros(max_iter,1);
 for k = 1:max_iter
         
     % L2 solve
-    x_mat(:,k) = b - (phix*lh_mat(1:MN,k) + phiy*lh_mat(MN+1:2*MN,k))/mu;
-    %x_mat(:,k) = b - (phi'*lh_mat(:,k))/mu;
+    x_mat(:,k) = b - (phi'*lh_mat(:,k))/mu;
     
     % L1 solve
     px_mat(:,k) = phi*x_mat(:,k);
-    w_soft = px_mat(:,k) + lh_mat(:,k)*mu;
+    w_soft = px_mat(:,k) + lh_mat(:,k)/tau;
     w_mat(:,k) = wthresh(w_soft,'s',(1/tau));
     
     % Lagrange update with acceleration
-    l_mat(:,k+1) = lh_mat(:,k) + tau*(w_mat(:,k) - px_mat(:,k));
+    l_mat(:,k+1) = lh_mat(:,k) + tau*(px_mat(:,k)-w_mat(:,k));
     a(k+1) = (1+sqrt(1+4*a(k)^2))/2;
     lh_mat(:,k+1) = l_mat(:,k+1) + (a(k) -1)/(a(k+1))*(l_mat(:,k+1) - l_mat(:,k));
-    
+   
+    % Residual  
     r(k) = norm(x_mat(:,k)-b);
     
     % Stopping criterion
@@ -87,73 +91,5 @@ lh = [reshape(lh_mat(1:MN,1:k+1),M,N,k+1); ...
 a = a(1:k+1);
 n = n(1:k);
 r = r(1:k);
-%}
 
-%% AMA
-%{
-% Step size restriction
-if tau >= mu/8
-    tau = mu/16;
-end
-
-% Stopping criteria
-e = 0.005;
-
-% Iteration variables initialization
-x_mat = zeros(M,N,max_iter);
-px_mat = zeros(M,N,2,max_iter);
-w_mat = zeros(M,N,2,max_iter);
-l_mat = zeros(M,N,2,max_iter+1);
-lh_mat = zeros(M,N,2,max_iter+1);
-a = zeros(max_iter+1,1); a(1) = 1;
-n = zeros(max_iter,1);
-r = zeros(max_iter,1);
-
-for k = 1:max_iter
-        
-    % L2 solve
-    [glx,~] = gradient(lh_mat(:,:,1,k));
-    [~,gly] = gradient(lh_mat(:,:,2,k));
-    x_mat(:,:,k) = b - (glx+gly)/mu;
-    
-    % L1 solve
-    [px_mat(:,:,1,k), px_mat(:,:,2,k)] = gradient(x_mat(:,:,k));
-    for ii=1:2
-        w_soft = px_mat(:,:,ii,k) + lh_mat(:,:,ii,k)*tau;
-        w_mat(:,:,ii,k) = wthresh(w_soft,'s',(1/tau));
-    end
-    
-    % Lagrange update with acceleration
-    a(k+1) = (1+sqrt(1+4*a(k)^2))/2;
-    for ii = 1:2
-    l_mat(:,:,ii,k+1) = lh_mat(:,:,ii,k) + tau*(w_mat(:,:,ii,k) - px_mat(:,:,ii,k));
-    lh_mat(:,:,ii,k+1) = l_mat(:,:,ii,k+1) + (a(k) -1)/(a(k+1))*(l_mat(:,:,ii,k+1) - l_mat(:,:,ii,k));
-    end
-    
-    % Residual
-    r(k) = norm(x_mat(:,:,k)-b);
-    
-    % Stopping criterion
-    if k == 1
-        n(k) = 1; 
-        continue
-    else
-        n(k) = norm(x_mat(:,:,k)-x_mat(:,:,k-1))/norm(x_mat(:,:,k));
-        if n(k) < e
-            break
-        end
-    end
-    
-end
-
-%% Clean up variables
-x = x_mat(:,:,1:k);
-px = px_mat(:,:,:,1:k);
-w = w_mat(:,:,:,1:k);
-l = l_mat(:,:,:,1:k+1);
-lh = lh_mat(:,:,:,1:k+1);
-a = a(1:k+1);
-n = n(1:k);
-r = r(1:k);
-%}
 end

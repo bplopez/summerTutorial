@@ -1,8 +1,21 @@
 % ADMMsolve: applies algorithm from Goldstein paper
-% Inputs:
 %
-% Outputs:
-%
+% Inputs:     b = measured image [ M x N ]
+%             mu = strongly complex constant
+%             tau = step size (< mu/8)
+%             phi = forward finite difference (2D directions) [ 2MN x MN ]
+%             max_iter = maximum number of iterations
+%         
+% Outputs:    x = image iterations [ M x N x iter ]
+%             px = phi*(image iterations) [ 2M x N x iter]
+%             l = Lagrange multiplier [ 2M x N x (iter+1) ]
+%             lh = Lagrange multiplier [ 2M x N x (iter+1) ]
+%             w = gradient image iterations [ 2M x N x (iter+1) ] 
+%             wh = gradient image iterations [ 2M x N x (iter+1) ]
+%             a = acceleration factor [ (iter+1) x 1]
+%             c = combined residual [ (iter+1) x 1 ]
+%             n = norm of image iteration differences [ iter x 1 ]
+%             r = norm of residual with input image [ iter x 1 ]
 
 function [x,px,l,lh,w,wh,a,c,n,r] = ADMMsolve(b,mu,tau,phi,max_iter)
 
@@ -43,7 +56,7 @@ l_mat(:,1) = lh_mat(:,1);
 a = zeros(max_iter+1,1); a(1) = 1;	% acceleration factor
 n = zeros(max_iter,1); 			% ||x-x*||/||x*|| for stopping
 r = zeros(max_iter,1);			% residual ||x-b||
-c = zeros(max_iter,1); c(1) = 10^6;	% combined residual
+c = zeros(max_iter+1,1); c(1) = 10^6;	% combined residual
 
 % Iteration
 for k = 1:max_iter
@@ -51,16 +64,13 @@ for k = 1:max_iter
     % L2 solve
     x_mat(:,k) = (L2A \ (mu*b + tau*phi'*wh_mat(:,k) -phi'*lh_mat(:,k)));
 
+    %L1 solve
     px_mat(:,k) = phi*x_mat(:,k);
-    for ii = 1:2
-        % L1 solve
-        w_mat((ii-1)*MN+1:ii*MN,k+1) = (wthresh((px_mat((ii-1)*MN+1:ii*MN,k) ...
-                           + lh_mat((ii-1)*MN+1:ii*MN,k)/tau),'s',(1/tau)));
+    w_soft = px_mat(:,k) + lh_mat(:,k)/tau;
+    w_mat(:,k+1) = wthresh(w_soft,'s',(1/tau));
 
-        % Lagrange update
-        l_mat((ii-1)*MN+1:ii*MN,k+1) = lh_mat((ii-1)*MN+1:ii*MN,k) + ...
-            tau*(px_mat((ii-1)*MN+1:ii*MN,k) - w_mat((ii-1)*MN+1:ii*MN,k+1));
-    end
+    %Lagrange update
+    l_mat(:,k+1) = lh_mat(:,k) + tau*(px_mat(:,k) - w_mat(:,k+1));
     
     % Combined residual calculation
     c(k+1) = (norm(l_mat(:,k+1)-lh_mat(:,k))^2)/tau + tau*norm(w_mat(:,k+1)-wh_mat(:,k))^2;
