@@ -1,19 +1,11 @@
-% Run solvers on phantom
-
-s = 1;  % 1 = ADMM, 2 = AMA
+% TVdriver
 
 %% Load image
-im = phantom(64);
-gsl = 256;
-m = 0;
-v = 0.01;
-b = imnoise(im,'gaussian',m,v/gsl);
-b = round(b*256);
-%b = round(im*256);
+im = load('p0105a_TT_1-300000_LL_all_EE_126.45-154.55.mat');
+b = im.imageDet1;
 [M,N] = size(b);
 MN = M*N;
 
-clear m v gsl
 
 %% Differential operator
 phix = zeros(MN,MN);
@@ -33,12 +25,13 @@ for ii = 1:MN
     end
 end
 phi = [phix;phiy];
+
 clear M N MN phix phiy ii;
 
 %% Run solver
-mu = 0.1;
+s = 1;  % 1 = ADMM, 2 = AMA
+mu = 1;
 iter = 50;
-
 if s == 1   % ADMM
     tau = mu*2;   
     [x, px, l, lh, w, wh, a, c, n, r] = ADMMsolve(b,mu,tau,phi,iter);
@@ -66,46 +59,13 @@ end
 subplot(2,3,3); imagesc(l(:,:,ii+1)); colorbar; title('l'); axis off;
 subplot(2,3,6); imagesc(lh(:,:,ii+1)); colorbar; title('lh'); axis off;
 
-jj = 32;
+jj = 42;
 figure(2); plot(b(:,jj)); hold on; plot(x(:,jj,end)); hold off; 
     legend('Input','Output','location','best');
     title(sprintf('Column %d',jj));
 
 figure(3); 
-subplot(1,2,1); imagesc(b); colorbar; axis off; title('Noisy Image')
-subplot(1,2,2); imagesc(round(x(:,:,end))); colorbar; axis off; title('TV Image')
+subplot(1,2,1); plotImage(b); colorbar; title('Noisy Image')
+subplot(1,2,2); plotImage(round(x(:,:,end))); colorbar; title('TV Image')
 
-clear ii jj s;
-
-%% old mu vs. tau calculations
-%{
-max_iter = 50;
-%mu = [0.01 0.1 1 10 100];
-%tau = mu;
-mu = [1 10 100];
-tau = [0.01 0.1 1 10 100];
-Nmu = length(mu);
-Ntau = length(tau);
-
-im = phantom(64);
-b = imnoise(im,'gaussian');
-[M,N] = size(b);
-MN = M*N;
-xin = rand(M,N);
-
-xout = zeros(Nmu,Ntau,M,N,max_iter+1);
-wout = zeros(Nmu,Ntau,2*M,N,max_iter+1);
-lout = wout;
-pxout = wout;
-n1 = zeros(Nmu,Ntau,max_iter+1);
-n2 = n1;
-
-for ii=1:Nmu
-for jj = 1:Ntau
-[xout(ii,jj,:,:,:),wout(ii,jj,:,:,:),lout(ii,jj,:,:,:),pxout(ii,jj,:,:,:),n1(ii,jj,:),n2(ii,jj,:)] = L1solve(b,xin,mu(ii),tau(jj),max_iter);
-fprintf('%2.2f %2.2f\n',mu(ii),tau(jj));
-end
-end
-
-%[xout,wout,lout,n1,n2] = L1solve(b,xin,mu,tau,max_iter);
-%}
+clear ii jj s
