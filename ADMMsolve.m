@@ -50,8 +50,8 @@ e = 0.005;
 eta = 0.999;
 
 % Iteration variables
-u_mat = zeros(MN,max_iter);
-pu_mat = zeros(2*MN,max_iter);
+u_mat = zeros(MN,max_iter+1);
+pu_mat = zeros(2*MN,max_iter+1);
 v_mat = zeros(2*MN,max_iter+1);
 vh_mat = zeros(2*MN,max_iter+1);
 v_mat(:,1) = vh_mat(:,1);
@@ -69,15 +69,15 @@ dres = zeros(max_iter,1);       % dual residual ||tAB(v-vh)||^2
 for k = 1:max_iter
 
     % L2 solve
-    u_mat(:,k) = (L2A \ (mu*b + tau*phi'*vh_mat(:,k) -phi'*lh_mat(:,k)));
+    u_mat(:,k+1) = (L2A \ (mu*b + tau*phi'*vh_mat(:,k) -phi'*lh_mat(:,k)));
 
     %L1 solve
-    pu_mat(:,k) = phi*u_mat(:,k);
-    w_soft = pu_mat(:,k) + lh_mat(:,k)/tau;
+    pu_mat(:,k+1) = phi*u_mat(:,k+1);
+    w_soft = pu_mat(:,k+1) + lh_mat(:,k)/tau;
     v_mat(:,k+1) = wthresh(w_soft,'s',(1/tau));
 
     %Lagrange update
-    l_mat(:,k+1) = lh_mat(:,k) + tau*(pu_mat(:,k) - v_mat(:,k+1));
+    l_mat(:,k+1) = lh_mat(:,k) + tau*(pu_mat(:,k+1) - v_mat(:,k+1));
     
     % Combined residual calculation
     c(k+1) = (norm(l_mat(:,k+1)-lh_mat(:,k))^2)/tau + tau*norm(v_mat(:,k+1)-vh_mat(:,k))^2;
@@ -95,16 +95,16 @@ for k = 1:max_iter
     end
 
     % Residual calculations
-    pres(k) = norm(pu_mat(:,k)-v_mat(:,k+1))^2;
+    pres(k) = norm(pu_mat(:,k+1)-v_mat(:,k+1))^2;
     dres(k) = norm(tau*phi'*(v_mat(:,k+1)-vh_mat(:,k)))^2;
-    r(k) = norm(u_mat(:,k)-b)^2;
+    r(k) = norm(u_mat(:,k+1)-b)^2;
 
     % Stopping criterion
     if k == 1
         n(k) = 1;
         continue
     else
-        n(k) = norm(u_mat(:,k)-u_mat(:,k-1))/norm(u_mat(:,k));
+        n(k) = norm(u_mat(:,k+1)-u_mat(:,k))/norm(u_mat(:,k+1));
         if n(k) < e
             break
         end
@@ -113,8 +113,8 @@ for k = 1:max_iter
 end
 
 %% Clean up variables
-u = reshape(u_mat(:,1:k),M,N,k);
-pu = [reshape(pu_mat(1:MN,1:k),M,N,k);reshape(pu_mat(MN+1:2*MN,1:k),M,N,k)];
+u = reshape(u_mat(:,1:k+1),M,N,k+1);
+pu = [reshape(pu_mat(1:MN,1:k+1),M,N,k+1);reshape(pu_mat(MN+1:2*MN,1:k+1),M,N,k+1)];
 v = [reshape(v_mat(1:MN,1:k+1),M,N,k+1);reshape(v_mat(MN+1:2*MN,1:k+1),M,N,k+1)];
 vh = [reshape(vh_mat(1:MN,1:k+1),M,N,k+1);reshape(vh_mat(MN+1:2*MN,1:k+1),M,N,k+1)];
 l = [reshape(l_mat(1:MN,1:k+1),M,N,k+1);reshape(l_mat(MN+1:2*MN,1:k+1),M,N,k+1)];
