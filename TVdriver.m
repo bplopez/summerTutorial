@@ -3,6 +3,8 @@
 %% Load image
 im = load('p0105a_TT_1-300000_LL_all_EE_126.45-154.55.mat');
 b = im.imageDet1;
+%im = phantom(64);
+%b = round(im*256);
 [M,N] = size(b);
 MN = M*N;
 
@@ -30,19 +32,22 @@ clear M N MN phix phiy ii;
 
 %% Run solver
 s = 1;  % 1 = ADMM, 2 = AMA
-mu = 1;
+mu = 0.1;
 iter = 50;
 if s == 1   % ADMM
     tau = mu*2;   
-    [x, px, l, lh, w, wh, a, c, n, r] = ADMMsolve(b,mu,tau,phi,iter);
+    %[x,pres,dres,r,n,c,a,px,l,lh,w,wh] = ADMMsolve(b,mu,tau,phi,iter);
+    [x,pres,dres,r,n,c,a] = ADMMsolve(b,mu,tau,phi,iter);
 else
     tau = mu/10;	% AMA
-    [x, px, l, lh, w, a, n, r] = AMAsolve(b,mu,tau,phi,iter);
+    %[x,r,n,a,px,l,lh,w] = AMAsolve(b,mu,tau,phi,iter);
+    [x,r,n,a] = AMAsolve(b,mu,tau,phi,iter);
 end
 
 clear phi
 
 %% Plot results
+%{
 ii = length(r);
 figure(1); 
 subplot(2,3,1); imagesc(round(x(:,:,ii))); colorbar; axis off; 
@@ -58,7 +63,7 @@ else
 end
 subplot(2,3,3); imagesc(l(:,:,ii+1)); colorbar; title('l'); axis off;
 subplot(2,3,6); imagesc(lh(:,:,ii+1)); colorbar; title('lh'); axis off;
-
+%}
 jj = 42;
 figure(2); plot(b(:,jj)); hold on; plot(x(:,jj,end)); hold off; 
     legend('Input','Output','location','best');

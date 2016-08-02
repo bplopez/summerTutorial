@@ -1,5 +1,7 @@
 % AMAsolve for min |w| + (mu/2) ||Ax-b||^2 s.t. phi*x = w
 %
+% Call:       [x,pres,dres,r,n,a,px,l,lh,w] = AMAsolve(b,mu,tau,phi,max_iter)
+%
 % Inputs:     b = measured image [ M x N ]
 %             mu = strongly complex constant
 %             tau = step size (< mu/8)
@@ -14,8 +16,10 @@
 %             a = acceleration factor [ (iter+1) x 1]
 %             n = norm of image iteration differences [ iter x 1 ]
 %             r = norm of residual with input image [ iter x 1 ]
+%             pres = norm of primal residual [ iter x 1 ]
+%             dres = norm of dual residual [ iter x 1 ]
 
-function  [x,px,l,lh,w,a,n,r] = AMAsolve(b,mu,tau,phi,max_iter)
+function  [u,pres,dres,r,n,a,pu,l,lh,v] = AMAsolve(b,mu,tau,phi,max_iter)
 
 %% Set up variables
 
@@ -38,39 +42,43 @@ end
 e = 0.005;
 
 % Iteration variables initialization
-x_mat = zeros(MN,max_iter);
-px_mat = zeros(2*MN,max_iter);
-w_mat = zeros(2*MN,max_iter);
+u_mat = zeros(MN,max_iter);
+pu_mat = zeros(2*MN,max_iter);
+v_mat = zeros(2*MN,max_iter);
 l_mat = zeros(2*MN,max_iter+1);
 lh_mat = zeros(2*MN,max_iter+1);
 a = zeros(max_iter+1,1); a(1) = 1;
 n = zeros(max_iter,1);
 r = zeros(max_iter,1);
+pres = zeros(max_iter,1);       % primal residual ||b-Ax-Bw||^2
+dres = zeros(max_iter,1);       % dual residual ||tAB(w-w)||^2
 
 for k = 1:max_iter
         
     % L2 solve
-    x_mat(:,k) = b - (phi'*lh_mat(:,k))/mu;
+    u_mat(:,k) = b - (phi'*lh_mat(:,k))/mu;
     
     % L1 solve
-    px_mat(:,k) = phi*x_mat(:,k);
-    w_soft = px_mat(:,k) + lh_mat(:,k)/tau;
-    w_mat(:,k) = wthresh(w_soft,'s',(1/tau));
+    pu_mat(:,k) = phi*u_mat(:,k);
+    w_soft = pu_mat(:,k) + lh_mat(:,k)/tau;
+    v_mat(:,k) = wthresh(w_soft,'s',(1/tau));
     
     % Lagrange update with acceleration
-    l_mat(:,k+1) = lh_mat(:,k) + tau*(px_mat(:,k)-w_mat(:,k));
+    l_mat(:,k+1) = lh_mat(:,k) + tau*(pu_mat(:,k)-v_mat(:,k));
     a(k+1) = (1+sqrt(1+4*a(k)^2))/2;
     lh_mat(:,k+1) = l_mat(:,k+1) + (a(k) -1)/(a(k+1))*(l_mat(:,k+1) - l_mat(:,k));
    
-    % Residual  
-    r(k) = norm(x_mat(:,k)-b);
+    % Residuals
+    pres(k) = norm(pu_mat(:,k)-v_mat(:,k))^2;
+    dres(k) = norm(tau*phi'*(l_mat(:,k+1)-lh_mat(:,k)))^2;
+    r(k) = norm(u_mat(:,k)-b)^2;
     
     % Stopping criterion
     if k == 1
         n(k) = 1; 
         continue
     else
-        n(k) = norm(x_mat(:,k)-x_mat(:,k-1))/norm(x_mat(:,k));
+        n(k) = norm(u_mat(:,k)-u_mat(:,k-1))/norm(u_mat(:,k));
         if n(k) < e
             break
         end
@@ -79,11 +87,11 @@ for k = 1:max_iter
 end
 
 %% Clean up variables
-x = reshape(x_mat(:,1:k),M,N,k);
-px = [reshape(px_mat(1:MN,1:k),M,N,k); ...
-          reshape(px_mat(MN+1:2*MN,1:k),M,N,k)];
-w = [reshape(w_mat(1:MN,1:k),M,N,k); ...
-         reshape(w_mat(MN+1:2*MN,1:k),M,N,k)];
+u = reshape(u_mat(:,1:k),M,N,k);
+pu = [reshape(pu_mat(1:MN,1:k),M,N,k); ...
+          reshape(pu_mat(MN+1:2*MN,1:k),M,N,k)];
+v = [reshape(v_mat(1:MN,1:k),M,N,k); ...
+         reshape(v_mat(MN+1:2*MN,1:k),M,N,k)];
 l = [reshape(l_mat(1:MN,1:k+1),M,N,k+1); ...
          reshape(l_mat(MN+1:2*MN,1:k+1),M,N,k+1)];
 lh = [reshape(lh_mat(1:MN,1:k+1),M,N,k+1); ...
