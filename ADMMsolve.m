@@ -37,9 +37,11 @@ L2A = mu*eye(MN,MN) + tau*(phi'*phi);	% constant used in L2 subproblem
 %% ADMM algorithm
 
 % Step size restriction
+%{
 if tau^3 > mu/16
 tau = (mu/20)^(1/3);
 end
+%}
 
 % Stopping criteria
 e = 0.005;
