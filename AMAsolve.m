@@ -1,6 +1,10 @@
-% AMAsolve for min |w| + (mu/2) ||Ax-b||^2 s.t. phi*x = w
+% AMAsolve: applies the Fast Alternating Minimization Algorithm from the  
+% Goldstein paper where the stopping criterion is when subsequent iterations  
+% differ by less than 0.5%. 
 %
-% Call:       [x,pres,dres,r,n,a,px,l,lh,w] = AMAsolve(b,mu,tau,phi,max_iter)
+% Call:       u = AMAsolve(b,mu,tau,phi,max_iter)
+%
+%             Or [u,pres,dres,r,n,a,px,l,lh,w] = AMAsolve(b,mu,tau,phi,max_iter)
 %
 % Inputs:     b = measured image [ M x N ]
 %             mu = strongly complex constant
@@ -8,16 +12,16 @@
 %             phi = forward finite difference (2D directions) [ 2MN x MN ]
 %             max_iter = maximum number of iterations
 %         
-% Outputs:    x = image iterations [ M x N x iter ]
-%             px = phi*(image iterations) [ 2M x N x iter]
+% Outputs:    u = image iterations [ M x N x iter ]
+%             pres = norm of primal residual [ iter x 1 ]
+%             dres = norm of dual residual [ iter x 1 ]
+%             pu = phi*(image iterations) [ 2M x N x iter]
 %             l = Lagrange multiplier [ 2M x N x (iter+1) ]
 %             lh = Lagrange multiplier [ 2M x N x (iter+1) ]
 %             w = gradient image iterations [ 2M x N x iter ]
 %             a = acceleration factor [ (iter+1) x 1]
 %             n = norm of image iteration differences [ iter x 1 ]
 %             r = norm of residual with input image [ iter x 1 ]
-%             pres = norm of primal residual [ iter x 1 ]
-%             dres = norm of dual residual [ iter x 1 ]
 
 function  [u,pres,dres,r,n,a,pu,l,lh,v] = AMAsolve(b,mu,tau,phi,max_iter)
 
@@ -28,15 +32,7 @@ function  [u,pres,dres,r,n,a,pu,l,lh,v] = AMAsolve(b,mu,tau,phi,max_iter)
 MN = M*N;
 b = b(:);
 
-% Physics model
-%A = eye(MN,MN);
-
 %% AMA algorithm
-%
-% Step size restriction
-if tau >= mu/8
-    tau = mu/16;
-end
 
 % Stopping criteria
 e = 0.005;

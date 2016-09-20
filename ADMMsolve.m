@@ -1,14 +1,19 @@
-% ADMMsolve: applies algorithm from Goldstein paper
+% ADMMsolve: applies Fast ADMM algorithm from Goldstein paper where the 
+% stopping criterion is when subsequent iterations differ by less than 0.5%. 
 %
-% Call:       [u,pres,dres,r,n,c,a,pu,l,lh,v,vh] = ADMMsolve(b,mu,tau,phi,max_iter)
+% Call:       u = ADMMsolve(b,mu,tau,phi,max_iter)
+%
+%             Or [u,pres,dres,r,n,c,a,pu,l,lh,v,vh] = ADMMsolve(b,mu,tau,phi,max_iter)
 %
 % Inputs:     b = measured image [ M x N ]
 %             mu = strongly complex constant
-%             tau = step size (< mu/8)
+%             tau = step size
 %             phi = forward finite difference (2D directions) [ 2MN x MN ]
 %             max_iter = maximum number of iterations
 %         
 % Outputs:    u = image iterations [ M x N x iter ]
+%             pres = norm of primal residual [ iter x 1 ]
+%             dres = norm of dual residual [ iter x 1 ]
 %             pu = phi*(image iterations) [ 2M x N x iter]
 %             l = Lagrange multiplier [ 2M x N x (iter+1) ]
 %             lh = Lagrange multiplier [ 2M x N x (iter+1) ]
@@ -18,12 +23,9 @@
 %             c = combined residual [ (iter+1) x 1 ]
 %             n = norm of image iteration differences [ iter x 1 ]
 %             r = norm of residual with input image [ iter x 1 ]
-%             pres = norm of primal residual [ iter x 1 ]
-%             dres = norm of dual residual [ iter x 1 ]
 
 function [u,pres,dres,r,n,c,a,pu,l,lh,v,vh] = ADMMsolve(b,mu,tau,phi,max_iter)
 
-%
 %% Set up variables
 
 % Image size
@@ -35,13 +37,6 @@ b = b(:);
 L2A = mu*eye(MN,MN) + tau*(phi'*phi);	% constant used in L2 subproblem
 
 %% ADMM algorithm
-
-% Step size restriction
-%{
-if tau^3 > mu/16
-tau = (mu/20)^(1/3);
-end
-%}
 
 % Stopping criteria
 e = 0.005;

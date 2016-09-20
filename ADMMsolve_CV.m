@@ -1,25 +1,29 @@
-% ADMMsolve_CV: applies algorithm from Goldstein paper
+% ADMMsolve_CV: applies the Fast ADMM algorithm from Goldstein paper where 
+% the stopping criteria is when the norm of the difference between the current 
+% iteration and a provided cross validation (CV) image exceeds the difference 
+% between the previous iteration and the CV image. This implementation prevents
+% overfitting the noise when denoising the meaured image
 %
-% Call:       [u,pres,dres,r,n,c,a] = ADMMsolve_CV(b,mu,tau,phi,max_iter)
+% Call:       u = ADMMsolve_CV(b,cv,mu,tau,phi,max_iter)
+%
+%             Or [u,pres,dres,cres,bres,cvres,accel] = ADMMsolve_CV(b,cv,mu,tau,phi,max_iter)
 %
 % Inputs:     b = measured image [ M x N ]
+%             cv = cross validation image [ M x N ]
 %             mu = strongly complex constant
-%             tau = step size (< mu/8)
+%             tau = step size
 %             phi = forward finite difference (2D directions) [ 2MN x MN ]
 %             max_iter = maximum number of iterations
 %         
 % Outputs:    u = image iterations [ M x N x iter ]
-%             pu = phi*(image iterations) [ 2M x N x iter]
-%             l = Lagrange multiplier [ 2M x N x (iter+1) ]
-%             lh = Lagrange multiplier [ 2M x N x (iter+1) ]
-%             v = gradient image iterations [ 2M x N x (iter+1) ] 
-%             vh = gradient image iterations [ 2M x N x (iter+1) ]
-%             a = acceleration factor [ (iter+1) x 1]
-%             c = combined residual [ (iter+1) x 1 ]
-%             n = norm of image iteration differences [ iter x 1 ]
-%             r = norm of residual with input image [ iter x 1 ]
 %             pres = norm of primal residual [ iter x 1 ]
 %             dres = norm of dual residual [ iter x 1 ]
+%             bres = norm of difference between current iteration and the
+%                    provided image to denoise
+%             cres = norm of combined residual [ (iter+1) x 1 ]
+%             cvres = norm of difference between CV image and current
+%                     iteration [ (iter+1) x 1 ]
+%             accel = acceleration factor [ (iter+1) x 1]
 
 function [u,pres,dres,cres,bres,cvres,accel] = ADMMsolve_CV(b,cv,mu,tau,phi,max_iter)
 
